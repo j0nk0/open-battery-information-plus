@@ -1,7 +1,11 @@
 """
-makita_lxt.py  —  Makita LXT 18V battery diagnostics module for OBI-1.
+makita_lxt.py — Makita LXT 18V battery diagnostics module for OBI-1.
 
 Supports battery types: 0 (standard/newest), 2, 3, 5 (F0513), 6 (10-cell BL36xx).
+
+Now also supports the unified Raspberry Pi Pico firmware:
+- Automatically sends b'\xFF\x00' on interface ready (LXT mode)
+- Sends b'\xFF\x00' on closeEvent so you can safely switch to XGT without re-flashing
 
 Command frame format used by ArduinoOBI interface:
   Byte 0: 0x01  (framing start)
@@ -315,8 +319,20 @@ class ModuleApplication(QWidget):
         return True
 
     def _log(self, msg: str):
+        """Helper for debug output (matches the XGT module)."""
         if self.obi_instance:
             self.obi_instance.update_debug(msg)
+
+    def _switch_to_lxt_mode(self):
+        """Send mode-switch command to unified Pico firmware (LXT mode)."""
+        try:
+            if self.interface and self.interface.serial.is_open:
+                self.interface.serial.write(b'\xFF\x00')
+                self.interface.serial.flush()
+                time.sleep(0.1)
+                self._log("[LXT] Switched to LXT mode")
+        except Exception as e:
+            self._log(f"[LXT] Mode switch failed: {e}")
 
     @staticmethod
     def _nibble_swap(byte: int) -> int:
@@ -395,8 +411,13 @@ class ModuleApplication(QWidget):
 
     def _on_interface_ready(self):
         """Called when the interface has finished its boot sequence and is ready."""
-        self.btn_read_model.setEnabled(True)
+        self._switch_to_lxt_mode()          # ← AUTOMATIC MODE SWITCH
 
+        # Keep all buttons disabled until the interface signals it is ready
+        # (i.e. firmware version has been read after the Arduino boot delay).
+        self.btn_read_model.setEnabled(True)
+        self.btn_read_data.setEnabled(True)
+  
     def _on_interface_disconnected(self):
         """Called when the interface disconnects — disable all action buttons."""
         for b in self._action_buttons:
@@ -779,3 +800,12 @@ class ModuleApplication(QWidget):
         self._cycle_count = 0
         self._basic_info_response = None
         self._disable_action_buttons()
+
+    def closeEvent(self, event):
+            try:
+                if self.interface and self.interface.serial.is_open:
+                    self.interface.serial.write(b'\xFF\x00')
+                    self.interface.serial.flush()
+            except:
+                pass
+            event.accept()
