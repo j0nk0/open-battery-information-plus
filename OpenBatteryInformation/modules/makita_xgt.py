@@ -1,8 +1,18 @@
 """
-WARNING! CODE IS NOT DONE YET + DONT USE ARDUINO! THIS IS FOR RASPBERRY!
-Thanx to: https://github.com/no-body-in-particular/m5din-makita-xgt/
+makita_xgt.py
+Makita XGT 40V module for OBI-1 with unified Raspberry Pi Pico firmware.
 
-makita_xgt.py — Makita XGT 40V battery diagnostics module for OBI
+Wiring:
+• LXT:  Battery Data → Pico GP6 + 4.7k pull-up
+• XGT:  Battery TR → 2N3904 collector + 4.7k pull-up
+         2N3904 base (via 1k) → Pico GP4
+         Pico GP5 → Battery TR
+
+Mode switching is automatic:
+• LXT module sends b'\xFF\x00'
+• XGT module sends b'\xFF\x01'
+
+No re-flashing needed — just switch modules in the GUI.
 
 Uses direct raw serial after mode switch (b'\xFF\x01') because XGT protocol is different from LXT 1-Wire.
 
