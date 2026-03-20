@@ -1,5 +1,18 @@
 """
-makita_lxt.py — Makita LXT 18V battery diagnostics module for OBI-1.
+makita_lxt.py
+Makita LXT 18V module for OBI-1 with unified Raspberry Pi Pico firmware.
+
+Wiring:
+• LXT:  Battery Data → Pico GP6 + 4.7k pull-up
+• XGT:  Battery TR → 2N3904 collector + 4.7k pull-up
+         2N3904 base (via 1k) → Pico GP4
+         Pico GP5 → Battery TR
+
+Mode switching is automatic:
+• LXT module sends b'\xFF\x00'
+• XGT module sends b'\xFF\x01'
+
+No re-flashing needed — just switch modules in the GUI.
 
 Supports battery types: 0 (standard/newest), 2, 3, 5 (F0513), 6 (10-cell BL36xx).
 
